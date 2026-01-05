@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://c20v3tghi02xm"]
+
+[ext_resource type="Script" uid="uid://d084blt0tjtkl" path="res://main.gd" id="1_ig7tw"]
+[ext_resource type="PackedScene" uid="uid://o0adnvmsaovy" path="res://addons/stardust-net/demo/2d-topdown/GameWorld.tscn" id="2_0xm2m"]
+
+[node name="main" type="Node"]
+script = ExtResource("1_ig7tw")
+
+[node name="GameWorld" parent="." instance=ExtResource("2_0xm2m")]
