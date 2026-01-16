@@ -8,12 +8,20 @@ func _ready():
 	StarDustNet.server_started.connect(_server_started)
 	StarDustNet.player_connected.connect(_player_connected)
 	StarDustNet.player_disconnected.connect(_player_disconnected)
+	
+	StarDustNet.subscribe_to_packet(self, InputData.TYPE_INPUT)
+	
 	randomize()
 	
 
 func _physics_process(delta: float) -> void:
 	pass
 	
+
+func get_local_player_instance():
+	if(_pid_to_instance.has(multiplayer.get_unique_id())):
+		return _pid_to_instance[multiplayer.get_unique_id()]
+	return -1
 
 func get_nearby_players_net_id(instance_id:int, distance:float):
 	var my_node = SDN_InstanceManager.get_instance_node(instance_id)
@@ -27,17 +35,25 @@ func get_nearby_players_net_id(instance_id:int, distance:float):
 	return player_id_list
 #signals
 func _server_started():
-	for i in range(200):
-		var instance_id = SDN_InstanceManager.create_net_instance("uid://ch4qe2f2h8pdh", str(get_path()))
-		var ai_node = SDN_InstanceManager.get_instance_node(instance_id)
-		ai_node.game_world = self
-		var pos = Vector2(randf_range(-256, +256), randf_range(-256, +256))
-		var rot = randf_range(0, PI * 2)
-		ai_node.set_global_position(pos)
-		ai_node.set_global_rotation(rot)
-		ai_node.set_name("iid_" + str(instance_id))
+	pass
+	#for i in range(200):
+		#var instance_id = SDN_InstanceManager.create_net_instance("uid://ch4qe2f2h8pdh", str(get_path()))
+		#var ai_node = SDN_InstanceManager.get_instance_node(instance_id)
+		#ai_node.game_world = self
+		#var pos = Vector2(randf_range(-256, +256), randf_range(-256, +256))
+		#var rot = randf_range(0, PI * 2)
+		#ai_node.set_global_position(pos)
+		#ai_node.set_global_rotation(rot)
+		#ai_node.set_name("iid_" + str(instance_id))
 
-
+func packet_received(net_packet:NetPacket):
+	if(StarDustNet.is_server()):
+		if(net_packet.type == InputData.TYPE_INPUT):
+			var dat = InputData.map_data(net_packet.data)
+			var instance_id = _pid_to_instance[net_packet.sender_id]
+			var instance_node = SDN_InstanceManager.get_instance_node(instance_id)
+			instance_node.movement_dir = dat.movement
+	
 func _player_connected(id:int):
 	SDN_InstanceManager.sync_instances(id)
 	var instance_id = SDN_InstanceManager.create_net_instance("uid://ch4qe2f2h8pdh", str(get_path()))
@@ -51,6 +67,16 @@ func _player_connected(id:int):
 	player_node.set_global_position(pos)
 	player_node.set_global_rotation(rot)
 	player_node.set_name(str(id))
+	
+	
+	SDN_PlayerDataManager.update_property("iid", id, instance_id)
+	
+	player_node.late_server_init()
+	
+
+
+	
+	
 
 func _player_disconnected(id:int):
 	SDN_InstanceManager.remove_net_instance(_pid_to_instance[id])

@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://brqi58eaypmfr"]
+
+[ext_resource type="Script" uid="uid://c8abkl3o5bumg" path="res://addons/stardust-net/demo/2d-topdown/instances/chest.gd" id="1_e0n1c"]
+[ext_resource type="Texture2D" uid="uid://tqiib28jg8hc" path="res://icon.svg" id="2_6irro"]
+
+[node name="Chest" type="Node2D"]
+script = ExtResource("1_e0n1c")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_6irro")

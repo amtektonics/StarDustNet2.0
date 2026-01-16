@@ -20,6 +20,8 @@ config/icon="res://icon.svg"
 
 StarDustNet="*res://addons/stardust-net/StarDustNet.gd"
 SDN_InstanceManager="*res://addons/stardust-net/Scripts/Singleton/InstanceManager.gd"
+SDN_TypeCodes="*res://addons/stardust-net/Scripts/Singleton/TypeCodes.gd"
+SDN_PlayerDataManager="*res://addons/stardust-net/Scripts/Singleton/PlayerDataManager.gd"
 
 [display]
 

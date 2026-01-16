@@ -1,9 +1,6 @@
 extends Node
 
-const TYPE_NONE = "non"
-const TYPE_INPUT = "inp"
-const TYPE_PING = "png"
-const TYPE_STATE_UPDATE ="stu"
+
 
 var _is_connected = false
 
@@ -20,11 +17,22 @@ var _subscription_id = 1
 
 signal server_started
 
+signal server_disconnected
+
 signal player_connected
 
 signal player_disconnected
 
 signal peer_closed
+
+var platform = ""
+var steam_api:Object = null
+
+func _ready():
+	if Engine.has_singleton("Steam"):
+		platform = "steam"
+		steam_api = Engine.get_singleton("Steam")
+		var initalized = steam_api.steamInitEx(false)
 
 func _physics_process(delta: float) -> void:
 	if(_is_connected):
@@ -36,6 +44,9 @@ func _physics_process(delta: float) -> void:
 		
 		_process_reliable_packet_subscriptions()
 		_process_unreliable_packet_subscriptions()
+		
+		if(is_steam_enabled()):
+			steam_api.run_callbacks()
 
 
 
@@ -163,6 +174,7 @@ func start_enet_client(ip_address:String, port:int)->int:
 		multiplayer.multiplayer_peer = _multplayer_peer
 		_register_enet_client_signals()
 		_is_connected = true
+		SDN_PlayerDataManager.init_manager()
 	return status
 
 func _register_enet_client_signals():
@@ -188,16 +200,17 @@ func close_enet_peer():
 		multiplayer.multiplayer_peer = null
 
 func _connected_to_server():
-	pass
+	emit_signal("connected_to_server")
 
 func _connection_failed():
 	pass
 
 func _server_disconnected():
-	pass
+	emit_signal("server_disconnected")
 
 #----------------------------------------------
 #subscription system
+##subscribing nodes need to add the packet_received(np:NetPacket) method
 func subscribe_to_packet(subscriber: Node, type:String, filter:Dictionary={}) -> int:
 	var id = _subscription_id
 	_subscriptions[id] = { "sub":subscriber, "type":type, "filter":filter}
@@ -222,10 +235,10 @@ func remove_all_subscription(subscriber:Node):
 
 func send_packet_reliable(packet:NetPacket):
 	var dt = packet.serialize()
-	if(packet.reciver_id == 0):
+	if(packet.receiver_id == 0):
 		rpc("_packet_received_reliable", dt)
 	else:
-		rpc_id(packet.reciver_id, "_packet_received_reliable", dt)
+		rpc_id(packet.receiver_id, "_packet_received_reliable", dt)
 
 @rpc("any_peer", "reliable", "call_remote")
 func _packet_received_reliable(data:String):
@@ -234,10 +247,10 @@ func _packet_received_reliable(data:String):
 
 func send_packet_unreliable(packet:NetPacket):
 	var dt = packet.serialize()
-	if(packet.reciver_id == 0):
+	if(packet.receiver_id == 0):
 		rpc("_packet_received_unreliable", dt)
 	else:
-		rpc_id(packet.reciver_id, "_packet_received_unreliable", dt)
+		rpc_id(packet.receiver_id, "_packet_received_unreliable", dt)
 
 @rpc("any_peer", "unreliable", "call_remote")
 func _packet_received_unreliable(data:String):
@@ -259,6 +272,11 @@ func get_player_net_id():
 
 func get_net_id():
 	return multiplayer.get_unique_id()
+
+func is_steam_enabled():
+	if(platform == "steam" && steam_api != null):
+		return true
+	return false
 
 static func get_server_id():
 	return 1

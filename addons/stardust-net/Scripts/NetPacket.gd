@@ -4,17 +4,17 @@ class_name NetPacket
 
 var type:String = ""
 var sender_id:int = 0
-var reciver_id:int = 0
+var receiver_id:int = 0
 var tick = 0
 var data:Dictionary = {}
 var processed:bool = false
 
 
-func _init(type:String, data:Dictionary, reciver_id:int = 0):
+func _init(type:String, data:Dictionary, receiver_id:int = 0):
 	self.type = type
 	self.sender_id = StarDustNet.get_net_id()
 	self.data = data
-	self.reciver_id = reciver_id
+	self.receiver_id = receiver_id
 	self.tick = StarDustNet.get_tick()
 
 
@@ -22,7 +22,7 @@ func serialize():
 	var packet = {
 		"t":type,
 		"sid":sender_id,
-		"rid":reciver_id,
+		"rid":receiver_id,
 		"tk":tick,
 		"data":data
 	}
