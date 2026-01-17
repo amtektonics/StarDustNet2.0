@@ -3,10 +3,11 @@ extends CharacterBody2D
 var instance_id = 0
 var game_world:GameWorld
 
-var last_update:PositionUpdate2D
-var last_packet:NetPacket
+var _last_update:PositionUpdate2D
+var _last_packet:NetPacket
 
 var movement_dir:Vector2
+
 
 @onready var _message_limiter = SDN_Utils.SDN_MessageLimiter.new(20, _limited_node_update)
 
@@ -34,12 +35,36 @@ func late_server_init():
 func _physics_process(delta: float) -> void:
 	_message_limiter.process(delta)
 	
+	
 	if(StarDustNet.is_server()):
-		velocity = velocity.move_toward(Vector2.ZERO, 0.5)
-		velocity += movement_dir * 1.0 * 100 * delta
-		
-		move_and_slide()
+		_simulate_movement(delta)
+	else:
+		var local_instance = get_parent().get_local_player_instance()
+		if(local_instance == instance_id):
+			_simulate_movement(delta)
 
+
+	
+	
+	
+	if(!StarDustNet.is_server()):
+		if(_last_packet != null):
+			var new_pos = Vector2(global_position.x, global_position.y)
+			var last_pos = Vector2(_last_update.position_x, _last_update.position_y)
+			
+			var last_rot = _last_update.rotation
+			var pos = SDN_Utils.compensate_lag_vec2(last_pos, new_pos)
+			var rot = SDN_Utils.compensate_lag_angle_float(last_rot, global_rotation)
+			
+			set_position(pos)
+			set_rotation(rot)
+	
+	
+
+func _simulate_movement(delta):
+	velocity = velocity.move_toward(Vector2.ZERO, 0.5)
+	velocity += movement_dir * 1.0 * 100 * delta
+	move_and_slide()
 
 func _limited_node_update(delta:float):
 	if(StarDustNet.is_server()):
@@ -58,32 +83,19 @@ func _limited_node_update(delta:float):
 	else:
 		var mov = Input.get_vector("left","right","up", "down")
 		var np = NetPacket.new(InputData.TYPE_INPUT, InputData.new(mov).get_as_data(), 1)
+		
+		var local_instance = get_parent().get_local_player_instance()
+		if(local_instance != instance_id):
+			movement_dir = mov
 		StarDustNet.send_packet_unreliable(np)
 
 func packet_received(net_packet:NetPacket):
 	if(!StarDustNet.is_server()):
 		if(net_packet.type == PositionUpdate2D.TYPE_UPDATE_POSITION_2D):
 			var pos_dat = PositionUpdate2D.map_data(net_packet.data)
-			
-			var pos = Vector2(pos_dat.position_x, pos_dat.position_y)
-			var rot = pos_dat.rotation
 			if(instance_id == instance_id):
-				if(last_update != null && net_packet != null):
-					var tick_diff = (net_packet.tick - last_packet.tick)
-					var new_pos = Vector2(pos_dat.position_x, pos_dat.position_y)
-					var last_pos = Vector2(last_update.position_x, last_update.position_y)
-					
-					var last_rot = pos_dat.rotation
-					pos = last_pos.lerp(new_pos, .05 / tick_diff)
-					rot = lerp_angle(last_rot, pos_dat.rotation, .05 / tick_diff)
-					
-				set_position(pos)
-				set_rotation(rot)
-				last_update = pos_dat
-				last_packet = net_packet
-	#server stuff
-	else:
-		pass
+				_last_update = pos_dat
+				_last_packet = net_packet
 
 
 func dispose_instance():

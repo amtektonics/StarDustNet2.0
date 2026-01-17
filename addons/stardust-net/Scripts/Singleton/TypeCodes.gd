@@ -19,6 +19,9 @@ static var TYPE_REMOVE_INSTANCE = "rmi"
 #This is for values inside of those data structures to minimize retyping of
 #data in dictionaries 
 
+static var TICK_CODE = "tik"
+static var NET_ID_CODE = "pid"
+
 #Player Data
 static var NAME_CODE = "nm"
 static var VALUE_CODE = "vl"

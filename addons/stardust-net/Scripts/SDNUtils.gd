@@ -7,7 +7,49 @@ func encode_vec2(vec:Vector2):
 func decode_vec2(value:String):
 	var values  = value.split(",")
 	return Vector2(float(values[0]), float(values[1]))
+
+func encode_vec3(vec:Vector3):
+	return str(str(vec.x) + "," + str(vec.y) + "," + str(vec.z))
+
+func decode_vec3(value:String):
+	var values  = value.split(",")
+	return Vector3(float(values[0]), float(values[1]), float(values[2]))
+
+
+static func compensate_lag_vec3(last_vec:Vector3, new_vec:Vector3) -> Vector3:
+	var ping = SDN_PlayerDataManager.get_property(StarDustNet.get_net_id(), SDN_TypeCodes.TYPE_PING)
+	if(ping == null):
+		ping = 0
+	else:
+		ping = int(ping)
+	var lerp_value = .25
+	if(ping > 4):
+		lerp_value = 1.0 / (ping) * (last_vec.distance_to(new_vec) * 4)
+	return last_vec.lerp(new_vec, lerp_value)
+
+static func compensate_lag_vec2(last_vec:Vector2, new_vec:Vector2) -> Vector2:
+	var ping = SDN_PlayerDataManager.get_property(StarDustNet.get_net_id(), SDN_TypeCodes.TYPE_PING)
+	if(ping == null):
+		ping = 0
+	else:
+		ping = int(ping)
+	var lerp_value = .25
+	if(ping > 50):
+		lerp_value = 1.0 / (ping) * (last_vec.distance_to(new_vec) * 4)
+	var result = last_vec.lerp(new_vec, lerp_value)
+	print(str(last_vec) + " - " + str(new_vec) + " - " + str(result) + " - " + str(lerp_value))
+	return result
 	
+static func compensate_lag_angle_float( last_value:float, new_value:float) -> float:
+	var ping = SDN_PlayerDataManager.get_property(StarDustNet.get_net_id(), SDN_TypeCodes.TYPE_PING)
+	if(ping == null):
+		ping = 0
+	else:
+		ping = int(ping)
+	var lerp_value = .25
+	if(ping > 50):
+		lerp_value = 1.0 / (ping) * (angle_difference(last_value, new_value) * 4)
+	return lerp_angle(last_value, new_value, lerp_value)
 
 class SDN_MessageLimiter:
 	var _tups = 0

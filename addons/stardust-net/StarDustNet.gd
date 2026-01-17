@@ -10,7 +10,8 @@ var _connected_players = []
 
 var _reliable_packets = []
 var _unreliable_packets = []
-#var _packets = []
+
+var _ping_history = {}
 
 var _subscriptions = {}
 var _subscription_id = 1
@@ -25,6 +26,8 @@ signal player_disconnected
 
 signal peer_closed
 
+signal connected_to_server
+
 var platform = ""
 var steam_api:Object = null
 
@@ -33,6 +36,7 @@ func _ready():
 		platform = "steam"
 		steam_api = Engine.get_singleton("Steam")
 		var initalized = steam_api.steamInitEx(false)
+	
 
 func _physics_process(delta: float) -> void:
 	if(_is_connected):
@@ -40,14 +44,45 @@ func _physics_process(delta: float) -> void:
 	
 		if(is_server()):
 			if(_tick % int((Engine.get_physics_ticks_per_second() * .125)) == 0):
-				pass
+				for pid in _connected_players:
+					if(pid == 1):
+						continue
+					_ping(pid)
 		
 		_process_reliable_packet_subscriptions()
 		_process_unreliable_packet_subscriptions()
 		
+		#clean up the ping table after 10 pings
+		for p in _ping_history:
+			if(_ping_history[p].size() > 10):
+				_ping_history[p].pop_front()
+		
 		if(is_steam_enabled()):
 			steam_api.run_callbacks()
 
+
+func get_ping_average(peer_id:int):
+	if(_ping_history.has(peer_id)):
+		var count = 0
+		var ping_sum = 0
+		for p in _ping_history[peer_id]:
+			ping_sum += p
+			count += 1
+		
+		if(count == 0):
+			return -1
+		
+		return ping_sum / count
+	else:
+		return -1
+
+func _ping(peer_id:int):
+	var dat = {
+		SDN_TypeCodes.TICK_CODE: Time.get_ticks_msec(),
+		SDN_TypeCodes.NET_ID_CODE: peer_id
+	}
+	var np = NetPacket.new(SDN_TypeCodes.TYPE_PING, dat, peer_id)
+	send_packet_reliable(np)
 
 
 #it goes through the subscriptions and packets and sends them to the 
@@ -148,6 +183,8 @@ func start_enet_server(port:int)-> int:
 		_is_connected = true
 		_register_enet_server_signals()
 		emit_signal("server_started")
+		_connected_players.append(1)
+		subscribe_to_packet(self, SDN_TypeCodes.TYPE_PING)
 	return status
 
 func _register_enet_server_signals():
@@ -160,12 +197,15 @@ func _disconnect_enet_server_signals():
 
 func _peer_connected(id:int):
 	_connected_players.append(id)
+	_connected_players.append(id)
 	emit_signal("player_connected", id)
 
 func _peer_disconnected(id:int):
 	if(_connected_players.has(id)):
 		_connected_players.erase(id)
+		_connected_players.erase(id)
 		emit_signal("player_disconnected", id)
+		
 
 func start_enet_client(ip_address:String, port:int)->int:
 	var _multplayer_peer = ENetMultiplayerPeer.new()
@@ -174,6 +214,7 @@ func start_enet_client(ip_address:String, port:int)->int:
 		multiplayer.multiplayer_peer = _multplayer_peer
 		_register_enet_client_signals()
 		_is_connected = true
+		subscribe_to_packet(self, SDN_TypeCodes.TYPE_PING)
 		SDN_PlayerDataManager.init_manager()
 	return status
 
@@ -231,7 +272,24 @@ func remove_all_subscription(subscriber:Node):
 		_subscriptions.erase(id)
 #----------------------------------------------
 
+func packet_received(net_packet:NetPacket):
+	if(net_packet.type == SDN_TypeCodes.TYPE_PING):
+		if(is_server()):
+			#now the round trip is done we need compare the time between the trip
+			var current_time = Time.get_ticks_msec()
+			var old_time = net_packet.data[SDN_TypeCodes.TICK_CODE]
+			var diff = current_time - old_time
+			if(!_ping_history.has(net_packet.sender_id)):
+				_ping_history[net_packet.sender_id] = []
+			_ping_history[net_packet.sender_id].append(diff)
+			SDN_PlayerDataManager.update_property(SDN_TypeCodes.TYPE_PING, net_packet.sender_id, get_ping_average(net_packet.sender_id))
+		else:
+			#send that netpacked back to the client
+			var np = NetPacket.new(net_packet.type, net_packet.data, 1)
+			send_packet_reliable(np)
 
+	
+#---------------------------------------------
 
 func send_packet_reliable(packet:NetPacket):
 	var dt = packet.serialize()
