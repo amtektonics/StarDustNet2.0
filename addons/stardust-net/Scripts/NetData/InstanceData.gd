@@ -2,13 +2,9 @@ extends SDN_NetData
 
 class_name InstanceData
 
-
-
-
 var instance_id = 0
 var scene_resource_path = ""
 var scene_tree_path = ""
-
 
 
 func set_values(instance_id:int, scene_resource_path:String, scene_tree_path:String):

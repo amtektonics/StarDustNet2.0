@@ -37,7 +37,6 @@ static func compensate_lag_vec2(last_vec:Vector2, new_vec:Vector2) -> Vector2:
 	if(ping > 50):
 		lerp_value = 1.0 / (ping) * (last_vec.distance_to(new_vec) * 4)
 	var result = last_vec.lerp(new_vec, lerp_value)
-	print(str(last_vec) + " - " + str(new_vec) + " - " + str(result) + " - " + str(lerp_value))
 	return result
 	
 static func compensate_lag_angle_float( last_value:float, new_value:float) -> float:
