@@ -1,6 +1,6 @@
 extends Node
 
-
+var max_input_packet_store = 10
 
 var _is_connected = false
 
@@ -16,6 +16,8 @@ var _ping_history = {}
 var _subscriptions = {}
 var _subscription_id = 1
 
+var _input_packets = {}
+
 signal server_started
 
 signal server_disconnected
@@ -27,6 +29,8 @@ signal player_disconnected
 signal peer_closed
 
 signal connected_to_server
+
+signal failed_to_connect
 
 var platform = ""
 var steam_api:Object = null
@@ -185,6 +189,7 @@ func start_enet_server(port:int)-> int:
 		emit_signal("server_started")
 		_connected_players.append(1)
 		subscribe_to_packet(self, SDN_TypeCodes.TYPE_PING)
+		subscribe_to_packet(self, SDN_TypeCodes.TYPE_INPUT)
 	return status
 
 func _register_enet_server_signals():
@@ -249,6 +254,40 @@ func _connection_failed():
 func _server_disconnected():
 	emit_signal("server_disconnected")
 
+##input data---------------------------------
+func send_input(value:Dictionary):
+	var np = NetPacket.new(SDN_TypeCodes.TYPE_INPUT, value, 1)
+	send_packet_reliable(np)
+
+
+func get_newest_input_packet(player_id:int):
+	if(_input_packets.has(player_id)):
+			var np_list = _input_packets[player_id]
+			var t_packet = null
+			var max_tick = 0
+			for np:NetPacket in np_list:
+				if(np.tick > max_tick):
+					max_tick = np.tick
+					t_packet = np
+			return t_packet
+			
+	return null
+
+func get_newest_input(player_id:int, name):
+	var p:NetPacket = get_newest_input_packet(player_id)
+	if(p != null):
+		if(p.data.has(name)):
+			return p.data[name]
+
+func _pop_oldest_input(player_id:int):
+		var oldest = 999999999999
+		var target_packet
+		for p:NetPacket in _input_packets[player_id]:
+			if(p.tick < oldest):
+				target_packet = p
+				oldest = p.tick
+		_input_packets[player_id].erase(target_packet)
+		
 #----------------------------------------------
 #subscription system
 ##subscribing nodes need to add the packet_received(np:NetPacket) method
@@ -287,6 +326,15 @@ func packet_received(net_packet:NetPacket):
 			#send that netpacked back to the client
 			var np = NetPacket.new(net_packet.type, net_packet.data, 1)
 			send_packet_reliable(np)
+	if(net_packet.type == SDN_TypeCodes.TYPE_INPUT):
+		if(is_server()):
+			if(!_input_packets.has(net_packet.sender_id)):
+				_input_packets[net_packet.sender_id] = []
+						
+			if(_input_packets[net_packet.sender_id].size() > max_input_packet_store):
+				_pop_oldest_input(net_packet.sender_id)
+			
+			_input_packets[net_packet.sender_id].append
 
 	
 #---------------------------------------------

@@ -1,13 +1,13 @@
-[gd_scene load_steps=2 format=3 uid="uid://o0adnvmsaovy"]
+[gd_scene format=3 uid="uid://o0adnvmsaovy"]
 
 [ext_resource type="Script" uid="uid://bcv7owxk7u3yk" path="res://addons/stardust-net/demo/2d-topdown/game_world.gd" id="1_3dlct"]
 
-[node name="GameWorld" type="Node2D"]
+[node name="GameWorld" type="Node2D" unique_id=1261932769]
 script = ExtResource("1_3dlct")
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1461651434]
 
-[node name="ConnectionScreen" type="Control" parent="CanvasLayer"]
+[node name="ConnectionScreen" type="Control" parent="CanvasLayer" unique_id=1726954642]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,7 +15,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="IP" type="LineEdit" parent="CanvasLayer/ConnectionScreen"]
+[node name="IP" type="LineEdit" parent="CanvasLayer/ConnectionScreen" unique_id=1605593343]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -32,7 +32,7 @@ text = "127.0.0.1"
 placeholder_text = "IP Address"
 alignment = 1
 
-[node name="Port" type="LineEdit" parent="CanvasLayer/ConnectionScreen"]
+[node name="Port" type="LineEdit" parent="CanvasLayer/ConnectionScreen" unique_id=1567205778]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -49,7 +49,7 @@ text = "13377"
 placeholder_text = "Port"
 alignment = 1
 
-[node name="Host" type="Button" parent="CanvasLayer/ConnectionScreen"]
+[node name="Host" type="Button" parent="CanvasLayer/ConnectionScreen" unique_id=1619140541]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -64,7 +64,7 @@ grow_horizontal = 2
 grow_vertical = 2
 text = "Host"
 
-[node name="Join" type="Button" parent="CanvasLayer/ConnectionScreen"]
+[node name="Join" type="Button" parent="CanvasLayer/ConnectionScreen" unique_id=55708337]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5

@@ -56,7 +56,7 @@ func packet_received(net_packet:NetPacket):
 	
 func _player_connected(id:int):
 	SDN_InstanceManager.sync_instances(id)
-	var instance_id = SDN_InstanceManager.create_net_instance("uid://ch4qe2f2h8pdh", str(get_path()))
+	var instance_id = SDN_InstanceManager.create_net_instance("uid://ch4qe2f2h8pdh", str(get_path()), id)
 	_pid_to_instance[id] = instance_id
 	
 	#inital creation of node setup

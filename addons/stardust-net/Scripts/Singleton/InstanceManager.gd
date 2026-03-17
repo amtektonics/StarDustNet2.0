@@ -9,7 +9,7 @@ func _ready():
 	StarDustNet.subscribe_to_packet(self, SDN_TypeCodes.TYPE_REMOVE_INSTANCE)
 
 
-func create_local_instance(instance_id:int, res_path:String, tree_path:String):
+func create_local_instance(instance_id:int, res_path:String, tree_path:String, owner_id = 0):
 	var scene = load(res_path)
 	var instance:Node = scene.instantiate()
 	if(instance.has_method("set_instance_id")):
@@ -19,14 +19,14 @@ func create_local_instance(instance_id:int, res_path:String, tree_path:String):
 	
 	get_node(NodePath(tree_path)).add_child(instance)
 	_instance_nodes[instance_id] = instance
-	_instance_data[instance_id] = InstanceData.new().set_values(instance_id, res_path, tree_path)
+	_instance_data[instance_id] = InstanceData.new().set_values(instance_id, res_path, tree_path, owner_id)
 
-func create_net_instance(res_path:String, tree_path:String):
+func create_net_instance(res_path:String, tree_path:String, owner_id = 0):
 	if(StarDustNet.is_server()):
 		var id = _instance_id_counter
 		_instance_id_counter = _instance_id_counter + 1
 		var inst_dat:InstanceData = InstanceData.new()
-		inst_dat.set_values(id, res_path, tree_path)
+		inst_dat.set_values(id, res_path, tree_path, owner_id)
 		var np:NetPacket = NetPacket.new(SDN_TypeCodes.TYPE_CREATE_INSTANCE, inst_dat.get_as_data())
 		StarDustNet.send_packet_reliable(np)
 		
@@ -60,6 +60,9 @@ func get_instance_node(instance_id:int):
 		return _instance_nodes[instance_id]
 	else:
 		return null
+
+func get_instance_owner(instance_id:int):
+	return _instance_data[instance_id].owner_id
 
 func sync_instances(player_id:int):
 	if(StarDustNet.is_server()):
