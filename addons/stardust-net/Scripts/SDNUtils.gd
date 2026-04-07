@@ -27,6 +27,20 @@ static func compensate_lag_vec3(last_vec:Vector3, new_vec:Vector3) -> Vector3:
 		lerp_value = 1.0 / (ping) * (last_vec.distance_to(new_vec) * 4)
 	return last_vec.lerp(new_vec, lerp_value)
 
+static func compensate_lag_angle_vec3(last_vec:Vector3, new_vec:Vector3)->Vector3:
+	var ping = SDN_PlayerDataManager.get_property(StarDustNet.get_net_id(), SDN_TypeCodes.TYPE_PING)
+	if(ping == null):
+		ping = 0
+	else:
+		ping = int(ping)
+	var lerp_value = .25
+	if(ping > 4):
+		lerp_value = 1.0 / (ping) * (last_vec.distance_to(new_vec) * 4)
+	var x = lerp_angle(last_vec.x, new_vec.x, lerp_value)
+	var y = lerp_angle(last_vec.y, new_vec.y, lerp_value)
+	var z = lerp_angle(last_vec.z, new_vec.z, lerp_value)
+	return Vector3(x, y, z)
+
 static func compensate_lag_vec2(last_vec:Vector2, new_vec:Vector2) -> Vector2:
 	var ping = SDN_PlayerDataManager.get_property(StarDustNet.get_net_id(), SDN_TypeCodes.TYPE_PING)
 	if(ping == null):
@@ -38,7 +52,22 @@ static func compensate_lag_vec2(last_vec:Vector2, new_vec:Vector2) -> Vector2:
 		lerp_value = 1.0 / (ping) * (last_vec.distance_to(new_vec) * 4)
 	var result = last_vec.lerp(new_vec, lerp_value)
 	return result
-	
+
+
+static func compensate_lag_angle_vec2(last_vec:Vector2, new_vec:Vector2)->Vector2:
+	var ping = SDN_PlayerDataManager.get_property(StarDustNet.get_net_id(), SDN_TypeCodes.TYPE_PING)
+	if(ping == null):
+		ping = 0
+	else:
+		ping = int(ping)
+	var lerp_value = .25
+	if(ping > 4):
+		lerp_value = 1.0 / (ping) * (last_vec.distance_to(new_vec) * 4)
+	var x = lerp_angle(last_vec.x, new_vec.x, lerp_value)
+	var y = lerp_angle(last_vec.y, new_vec.y, lerp_value)
+	return Vector2(x, y)
+
+
 static func compensate_lag_angle_float( last_value:float, new_value:float) -> float:
 	var ping = SDN_PlayerDataManager.get_property(StarDustNet.get_net_id(), SDN_TypeCodes.TYPE_PING)
 	if(ping == null):
@@ -49,6 +78,7 @@ static func compensate_lag_angle_float( last_value:float, new_value:float) -> fl
 	if(ping > 50):
 		lerp_value = 1.0 / (ping) * (angle_difference(last_value, new_value) * 4)
 	return lerp_angle(last_value, new_value, lerp_value)
+
 
 class SDN_MessageLimiter:
 	var _tups = 0

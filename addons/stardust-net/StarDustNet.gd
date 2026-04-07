@@ -2,6 +2,9 @@ extends Node
 
 var max_input_packet_store = 10
 
+var max_packet_store = 30
+
+
 var _is_connected = false
 
 var _tick = 0
@@ -52,7 +55,6 @@ func _physics_process(delta: float) -> void:
 					if(pid == 1):
 						continue
 					_ping(pid)
-		
 		_process_reliable_packet_subscriptions()
 		_process_unreliable_packet_subscriptions()
 		
@@ -85,16 +87,54 @@ func _ping(peer_id:int):
 		SDN_TypeCodes.TICK_CODE: Time.get_ticks_msec(),
 		SDN_TypeCodes.NET_ID_CODE: peer_id
 	}
-	var np = NetPacket.new(SDN_TypeCodes.TYPE_PING, dat, peer_id)
+	var np = NetPacket.new(SDN_TypeCodes.TYPE_PING, dat, [peer_id])
 	send_packet_reliable(np)
+
+
+func send_input(value:Dictionary):
+	var np = NetPacket.new(SDN_TypeCodes.TYPE_INPUT, value, [1])
+	send_packet_reliable(np)
+
+
+func get_newest_input_packet(player_id:int):
+	if(_input_packets.has(player_id)):
+			var np_list = _input_packets[player_id]
+			var t_packet = null
+			var max_tick = 0
+			for np:NetPacket in np_list:
+				if(np.tick > max_tick):
+					max_tick = np.tick
+					t_packet = np
+			return t_packet
+			
+	return null
+
+
+func get_newest_input(player_id:int, name):
+	var p:NetPacket = get_newest_input_packet(player_id)
+	if(p != null):
+		if(p.data.has(name)):
+			return p.data[name]
+
+
+func _pop_oldest_input(player_id:int):
+		var oldest = 999999999999
+		var target_packet
+		for p:NetPacket in _input_packets[player_id]:
+			if(p.tick < oldest):
+				target_packet = p
+				oldest = p.tick
+		_input_packets[player_id].erase(target_packet)
 
 
 #it goes through the subscriptions and packets and sends them to the 
 #endpoints that requested the data as a subscriber
 func _process_reliable_packet_subscriptions():
+	
 	for p:NetPacket in _reliable_packets:
 		if(p.processed):
 			continue
+		
 		var is_in_subscription = false
 		for s in _subscriptions:
 			if(p.type == _subscriptions[s]["type"]):
@@ -126,14 +166,12 @@ func _process_reliable_packet_subscriptions():
 						else:
 							assert("your subscribed node at " + str(node.get_path()) + " is missing packet_recived function")
 	
-	var pop_index = 0
-	for i in range(_reliable_packets.size()):
+	var good_packets = []
+	for i in range(_reliable_packets.size() - 1):
 		if(!_reliable_packets[i].processed):
-			return
-		pop_index = pop_index + 1
-	
-	for j in range(pop_index-1):
-		_reliable_packets.pop_front()
+			good_packets.append(_reliable_packets[i])
+	_reliable_packets = good_packets
+
 
 func _process_unreliable_packet_subscriptions():
 	for p:NetPacket in _unreliable_packets:
@@ -168,14 +206,11 @@ func _process_unreliable_packet_subscriptions():
 						else:
 							assert("your subscribed node at " + str(node.get_path()) + " is missing packet_recived function")
 	
-	var pop_index = 0
-	for i in range(_unreliable_packets.size()):
+	var good_packets = []
+	for i in range(_unreliable_packets.size() - 1):
 		if(!_unreliable_packets[i].processed):
-			return
-		pop_index = pop_index + 1
-	
-	for j in range(pop_index-1):
-		_unreliable_packets.pop_front()
+			good_packets.append(_unreliable_packets[i])
+	_unreliable_packets = good_packets
 
 
 
@@ -254,40 +289,6 @@ func _connection_failed():
 func _server_disconnected():
 	emit_signal("server_disconnected")
 
-##input data---------------------------------
-func send_input(value:Dictionary):
-	var np = NetPacket.new(SDN_TypeCodes.TYPE_INPUT, value, 1)
-	send_packet_reliable(np)
-
-
-func get_newest_input_packet(player_id:int):
-	if(_input_packets.has(player_id)):
-			var np_list = _input_packets[player_id]
-			var t_packet = null
-			var max_tick = 0
-			for np:NetPacket in np_list:
-				if(np.tick > max_tick):
-					max_tick = np.tick
-					t_packet = np
-			return t_packet
-			
-	return null
-
-func get_newest_input(player_id:int, name):
-	var p:NetPacket = get_newest_input_packet(player_id)
-	if(p != null):
-		if(p.data.has(name)):
-			return p.data[name]
-
-func _pop_oldest_input(player_id:int):
-		var oldest = 999999999999
-		var target_packet
-		for p:NetPacket in _input_packets[player_id]:
-			if(p.tick < oldest):
-				target_packet = p
-				oldest = p.tick
-		_input_packets[player_id].erase(target_packet)
-		
 #----------------------------------------------
 #subscription system
 ##subscribing nodes need to add the packet_received(np:NetPacket) method
@@ -311,6 +312,7 @@ func remove_all_subscription(subscriber:Node):
 		_subscriptions.erase(id)
 #----------------------------------------------
 
+
 func packet_received(net_packet:NetPacket):
 	if(net_packet.type == SDN_TypeCodes.TYPE_PING):
 		if(is_server()):
@@ -324,7 +326,7 @@ func packet_received(net_packet:NetPacket):
 			SDN_PlayerDataManager.update_property(SDN_TypeCodes.TYPE_PING, net_packet.sender_id, get_ping_average(net_packet.sender_id))
 		else:
 			#send that netpacked back to the client
-			var np = NetPacket.new(net_packet.type, net_packet.data, 1)
+			var np = NetPacket.new(net_packet.type, net_packet.data, [1])
 			send_packet_reliable(np)
 	if(net_packet.type == SDN_TypeCodes.TYPE_INPUT):
 		if(is_server()):
@@ -334,17 +336,18 @@ func packet_received(net_packet:NetPacket):
 			if(_input_packets[net_packet.sender_id].size() > max_input_packet_store):
 				_pop_oldest_input(net_packet.sender_id)
 			
-			_input_packets[net_packet.sender_id].append
+			_input_packets[net_packet.sender_id].append(net_packet)
 
 	
 #---------------------------------------------
 
 func send_packet_reliable(packet:NetPacket):
 	var dt = packet.serialize()
-	if(packet.receiver_id == 0):
+	if(packet.receiver_ids == []):
 		rpc("_packet_received_reliable", dt)
 	else:
-		rpc_id(packet.receiver_id, "_packet_received_reliable", dt)
+		for i in packet.receiver_ids:
+			rpc_id(i, "_packet_received_reliable", dt)
 
 @rpc("any_peer", "reliable", "call_remote")
 func _packet_received_reliable(data:String):
@@ -353,10 +356,13 @@ func _packet_received_reliable(data:String):
 
 func send_packet_unreliable(packet:NetPacket):
 	var dt = packet.serialize()
-	if(packet.receiver_id == 0):
+	if(packet.receiver_ids == []):
 		rpc("_packet_received_unreliable", dt)
 	else:
-		rpc_id(packet.receiver_id, "_packet_received_unreliable", dt)
+		for i in packet.receiver_ids:
+			if(multiplayer.get_unique_id() == i):
+				continue
+			rpc_id(i, "_packet_received_unreliable", dt)
 
 @rpc("any_peer", "unreliable", "call_remote")
 func _packet_received_unreliable(data:String):
@@ -384,5 +390,5 @@ func is_steam_enabled():
 		return true
 	return false
 
-static func get_server_id():
+func get_server_id():
 	return 1
