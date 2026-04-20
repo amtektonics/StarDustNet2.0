@@ -53,8 +53,8 @@ func _physics_process(delta: float) -> void:
 			var last_pos = Vector2(_last_update.position_x, _last_update.position_y)
 			
 			var last_rot = _last_update.rotation
-			var pos = SDN_Utils.compensate_lag_vec2(last_pos, new_pos)
-			var rot = SDN_Utils.compensate_lag_angle_float(last_rot, global_rotation)
+			var pos = SDN_Utils.compensate_lag_vec2_ping(last_pos, new_pos)
+			var rot = SDN_Utils.compensate_lag_angle_float_ping(last_rot, global_rotation)
 			
 			set_position(pos)
 			set_rotation(rot)
@@ -82,7 +82,7 @@ func _limited_node_update(delta:float):
 			StarDustNet.send_packet_unreliable(np)
 	else:
 		var mov = Input.get_vector("left","right","up", "down")
-		var np = NetPacket.new(InputData.TYPE_INPUT, InputData.new(mov).get_as_data(), 1)
+		var np = NetPacket.new(InputData.TYPE_INPUT, InputData.new(mov).get_as_data(), [1])
 		
 		var local_instance = get_parent().get_local_player_instance()
 		if(local_instance != instance_id):

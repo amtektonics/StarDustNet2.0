@@ -140,6 +140,8 @@ func _process_reliable_packet_subscriptions():
 			if(p.type == _subscriptions[s]["type"]):
 				#basic no filter request
 				if(_subscriptions[s]["filter"] == {}):
+					if(_subscriptions[s]["sub"] == null):
+						continue
 					var node:Node = _subscriptions[s]["sub"]
 					if(node.has_method("packet_received")):
 						node.packet_received(p)
@@ -157,7 +159,7 @@ func _process_reliable_packet_subscriptions():
 						else:
 							filter_match = false
 						if(!filter_match): 
-							return
+							continue
 					if(filter_match):
 						var node:Node = _subscriptions[s]["sub"]
 						if(node.has_method("packet_received")):
