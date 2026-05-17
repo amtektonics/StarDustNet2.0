@@ -24,13 +24,13 @@ static func compensate_lag_vec2(old_position:Vector2, new_position:Vector2, tick
 		return new_position
 
 static func compensate_lag_vec3(old_position:Vector3, new_position:Vector3, tick_diff:float)-> Vector3:
-	if(tick_diff != 0):
+	if(tick_diff > 20):
 		return old_position.lerp(new_position,  clampf(.01 * tick_diff, 0, 1))
 	else:
 		return new_position
 
 static func compensate_lag_angle_vec2(old_position:Vector2, new_position:Vector2, tick_diff:float)-> Vector2:
-	if(tick_diff != 0):
+	if(tick_diff > 20):
 		var x = lerp_angle(old_position.x, new_position.x,  clampf(.01 * tick_diff, 0, 1))
 		var y = lerp_angle(old_position.y, new_position.y, clampf(.01 * tick_diff, 0, 1))
 		return Vector2(x, y)
@@ -38,7 +38,7 @@ static func compensate_lag_angle_vec2(old_position:Vector2, new_position:Vector2
 		return new_position
 
 static func compensate_lag_angle_vec3(old_position:Vector3, new_position:Vector3, tick_diff:float)-> Vector3:
-	if(tick_diff != 0):
+	if(tick_diff > 20):
 		var x = lerp_angle(old_position.x, new_position.x,  clampf(.01 * tick_diff, 0, 1))
 		var y = lerp_angle(old_position.y, new_position.y,  clampf(.01 * tick_diff, 0, 1))
 		var z = lerp_angle(old_position.z, new_position.z,  clampf(.01 * tick_diff, 0, 1))
@@ -47,13 +47,13 @@ static func compensate_lag_angle_vec3(old_position:Vector3, new_position:Vector3
 		return new_position
 
 static func compensate_lag_float(old_float:float, new_float:float, tick_diff:float)-> float:
-	if(tick_diff != 0):
+	if(tick_diff > 20):
 		return lerp(old_float, new_float,  clampf(.01 * tick_diff, 0, 1))
 	else:
 		return new_float
 
 static func compensate_lag_angle(old_float:float, new_float:float, tick_diff:float)-> float:
-	if(tick_diff != 0):
+	if(tick_diff > 20):
 		return lerp_angle(old_float, new_float,  clampf(.01 * tick_diff, 0, 1))
 	else:
 		return new_float

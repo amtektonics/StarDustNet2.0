@@ -87,12 +87,12 @@ func _ping(peer_id:int):
 		SDN_TypeCodes.TICK_CODE: Time.get_ticks_msec(),
 		SDN_TypeCodes.NET_ID_CODE: peer_id
 	}
-	var np = NetPacket.new(SDN_TypeCodes.TYPE_PING, dat, [peer_id])
+	var np = NetPacket.new(SDN_TypeCodes.TYPE_PING, dat, [], [peer_id])
 	send_packet_reliable(np)
 
 
 func send_input(value:Dictionary):
-	var np = NetPacket.new(SDN_TypeCodes.TYPE_INPUT, value, [1])
+	var np = NetPacket.new(SDN_TypeCodes.TYPE_INPUT, value, [], [1])
 	send_packet_reliable(np)
 
 
@@ -130,13 +130,18 @@ func _pop_oldest_input(player_id:int):
 #it goes through the subscriptions and packets and sends them to the 
 #endpoints that requested the data as a subscriber
 func _process_reliable_packet_subscriptions():
-	
 	for p:NetPacket in _reliable_packets:
 		if(p.processed):
 			continue
 		
 		var is_in_subscription = false
 		for s in _subscriptions:
+			#check the instance information
+			if(_subscriptions[s]["instance"] != 0):
+				var id = _subscriptions[s]["instance"]
+				if(!p.instance_targets.has(id)):
+					continue
+			
 			if(p.type == _subscriptions[s]["type"]):
 				#basic no filter request
 				if(_subscriptions[s]["filter"] == {}):
@@ -294,9 +299,9 @@ func _server_disconnected():
 #----------------------------------------------
 #subscription system
 ##subscribing nodes need to add the packet_received(np:NetPacket) method
-func subscribe_to_packet(subscriber: Node, type:String, filter:Dictionary={}) -> int:
+func subscribe_to_packet(subscriber: Node, type:String, filter:Dictionary={}, instance:int=0) -> int:
 	var id = _subscription_id
-	_subscriptions[id] = { "sub":subscriber, "type":type, "filter":filter}
+	_subscriptions[id] = { "sub":subscriber, "type":type, "filter":filter, "instance":instance}
 	_subscription_id = _subscription_id + 1
 	return id
 
@@ -328,7 +333,7 @@ func packet_received(net_packet:NetPacket):
 			SDN_PlayerDataManager.update_property(SDN_TypeCodes.TYPE_PING, net_packet.sender_id, get_ping_average(net_packet.sender_id))
 		else:
 			#send that netpacked back to the client
-			var np = NetPacket.new(net_packet.type, net_packet.data, [1])
+			var np = NetPacket.new(net_packet.type, net_packet.data, [], [1])
 			send_packet_reliable(np)
 	if(net_packet.type == SDN_TypeCodes.TYPE_INPUT):
 		if(is_server()):

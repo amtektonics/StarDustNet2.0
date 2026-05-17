@@ -74,6 +74,8 @@ static var TYPE_BLOCK_ANIMATION = "bam"
 
 static var TYPE_WORKBENCH_UPDATE = "wbu"
 
+static var TYPE_MENU_UPDATE = "mnu"
+
 #Instance TypeCodes---------------------------------------
 static var INSTANCE_ID_CODE = "iid"
 static var SCENE_RESOURCE_PATH_CODE = "srp"

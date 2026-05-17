@@ -93,7 +93,7 @@ func sync_instances(player_id:int):
 		for i in _instance_data:
 			update_spawn_info(i)
 			var inst:InstanceData = _instance_data[i]
-			var np:NetPacket = NetPacket.new(SDN_TypeCodes.TYPE_CREATE_INSTANCE, inst.get_as_data(), [player_id])
+			var np:NetPacket = NetPacket.new(SDN_TypeCodes.TYPE_CREATE_INSTANCE, inst.get_as_data(), [], [player_id])
 			StarDustNet.send_packet_reliable(np)
 
 func packet_received(packet:NetPacket):
